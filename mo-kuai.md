@@ -1,4 +1,11 @@
-* `__init__.py`：每一个包目录下面都会有一个`__init__.py`的文件，这个文件是**必须存在**的，否则，Python就把这个目录当成普通目录，而不是一个包。`__init__.py`可以是空文件，也可以有Python代码，因为`__init__.py`本身就是一个模块.
+# 6.从一个app启动另一个app {#从一个app启动另一个app}
+
+### 已知目标app的包名 {#已知目标app的包名}
+
+```
+Intent intent = context.getPackageManager().getLaunchIntentForPackage(appPackageName);
+context.startActivity(intent);
+```
 
 
 

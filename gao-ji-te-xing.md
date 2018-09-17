@@ -1,156 +1,133 @@
-### 切片Slice
+# .Application的使用 {#5application的使用}
 
-取一个list或tuple的部分元素。
+Applicaiton类的生命周期是整个程序中最长的，就等于整个程序的生命周期。 Application是全局单例的，在各处使用getApplication\(\)获得的都是同一个对象。所以用来进行数据传递、数据共享、数据缓存等操作。
 
-```
->>> L[1:3]
-['Sarah', 'Tracy']
-```
+### 自定义Application {#自定义application}
 
-取 L 的前10个数
+通常情况下，系统会自动创建。自定义时，创建一个类继承Application类，并**在Manifest.xml的标签中将name属性指定为创建的类的全名称即可**。
 
-`L[:10]`
+### 用Application进行数据缓存 {#用application进行数据缓存}
 
-取 L 的后10个数
+在Application中，可以使用HashMap进行数据的传递和缓存。比如，一个Activity从服务器获取数据后，可以缓存在Application。从其他Activity再回来时，就可以直接使用缓存好的数据了。
 
-```
-L[-10:]
-```
+### 自定义application {#自定义application}
 
-前10个数，每两个取一个：
+启动Application时，系统会创建一个PID，即进程ID，所有的Activity就会在此进程上运行。那么我们在Application创建的时候初始化全局变量，同一个应用的所有Activity都可以取到这些全局变量的值，换句话说，我们在某一个Activity中改变了这些全局变量的值，那么在同一个应用的其他Activity中值就会改变。
+
+使用示例：
 
 ```
-L[:10:2]
-```
+/** 
+ * 全局Application，为什么要用Application，主要是因为这就像一个session， 
+ * 用于临时保存各种传值、服务器url，如果用数据库或者其他的操作来保存这些 
+ * 数据的话管理起来就很繁琐，而且也不利于程序的运行速度。 
+ *  
+ */  
+package com.example.utils;  
 
-所有数，每5个取一个：
+import java.util.LinkedList;  
+import java.util.List;  
 
-```
-L[::5]
-```
+import android.app.Activity;  
+import android.app.Application;  
 
-复制：
+public class MyApplication extends Application {  
+    private UsersDBManager UsersDBManager1;  
+    private SystemDBManager SystemDBManager1;  
+    private SubmitDBManager submitDBManager1;  
 
-```
-L[:]
-```
+    /** 
+     * 为了完全退出程序调用方法 MyApplication.getInstance().addActivity(this); 
+     * MyApplication1.getInstance().exit(); 
+     */  
+    private static MyApplication instance;  
 
-其中 L 可以是 list、tuple 或者 字符串。
+    private List
+<
+Activity
+>
+ activityList = new LinkedList
+<
+Activity
+>
+();  
 
-### 迭代Iteration
 
-dict 的迭代：
+  /**
+  * 其实用getApplication()获得的对象向下转型为MyApplication即可。
+  */
+    private MyApplication() {  
+    }
+    // 单线程下，单例模式获取唯一的MyApplication实例  
+    public static MyApplication getInstance() {  
+        if (null == instance) {  
+            instance = new MyApplication();  
+        }  
+        return instance;  
+    }  
 
-```
-d = {'a': 1, 'b': 2, 'c': 3}
-for key in d:
-或者
-for value in d.values()：
-或者
-for k, v in d.items()：
-```
+    //多线程下的单例模式
+    private static final TaxIMPApplication APP = new TaxIMPApplication();
+    private TaxIMPApplication(){}
+    public static TaxIMPApplication getApplication(){
+        return APP;
+    }
 
-* 判断一个对象是否可迭代
+    /**
+    *正确写法
+    */
+    private static TaxIMPApplication application;
+    public static TaxIMPApplication getApplication(){
+        return application;
+    }
 
-```
-from collections import Iterable
-isinstance('abc', Iterable) # str是否可迭代，返回True
-```
+    // 添加Activity到容器中  
+    public void addActivity(Activity activity) {  
+        activityList.add(activity);  
+    }  
 
-* Python内置的`enumerate`函数可以把一个list变成索引-元素对，这样就可以在`for`循环中同时迭代索引和元素本身：
+    // 遍历所有Activity并finish  
+    public void exit() {  
+        for (Activity activity : activityList) {  
+            activity.finish();  
+        }  
+        System.exit(0);  
+    }         
+    @Override  
+    public void onCreate() {  
+        // TODO Auto-generated method stub  
 
-```
-for i, value in enumerate(['A', 'B', 'C']):
-     print(i, value)
-```
+        super.onCreate(); //重写onCreate()时必须调用 
 
-* for 循环可以同时引用两个变量
+        UsersDBManager1 = new UsersDBManager(this);  
+        SystemDBManager1 = new SystemDBManager(this);  
+        submitDBManager1 = new SubmitDBManager(this);  
+        // 初始化全局变量  
 
-```
-for x, y in [(1, 1), (2, 4), (3, 9)]:
-     print(x, y)
-```
-
-### 列表生成式List Comprehensions
-
-用于创建list。
-
-```
-[x * x for x in range(1, 11)]
-输出：
-[1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
-```
-
-其他用法：
-
-* 带 if 判断：
-
-```
-[x * x for x in range(1, 11) if x % 2 == 0]
-```
-
-* 双层循环
-
-```
-[m + n for m in 'ABC' for n in 'XYZ']
-输出
-['AX', 'AY', 'AZ', 'BX', 'BY', 'BZ', 'CX', 'CY', 'CZ']
-```
-
-列出当前目录下的所有文件和目录：
-
-```
->>> import os # 导入os模块
->>> [d for d in os.listdir('.')] # os.listdir可以列出文件和目录
-['.emacs.d', '.ssh', '.Trash', 'Adlm', 'Applications', 'Desktop', 'Documents', 
-'Downloads', 'Library', 'Movies', 'Music', 'Pictures', 'Public', 'VirtualBox VMs', 'Workspace', 'XCode']
-```
-
-### 生成器Generator
-
-在循环的过程中不断推算出后续的元素。
-
-```
- g = (x * x for x in range(10))
-```
-
-next\(g\) 获取下一个值，或者使用 for 循环。
-
-* 另一种写法（斐波那契数列）：
+    }  
+   void  onConfigurationChanged(Configuration newConfig){}
+   void  onLowMemory(){}
+}
 
 ```
-def fib(max):
-    n, a, b = 0, 0, 1
-    while n < max:
-        yield b # 生成器的关键字
-        a, b = b, a + b
-        n = n + 1
-    return 'done'
-```
 
-generator的函数在每次调用`next()`的时候执行，遇到`yield`语句返回，再次执行时从上次返回的`yield`语句处继续执行。
-
-用`for`循环调用generator时，发现拿不到 generator 的`return`语句的返回值。如果想要拿到返回值，必须捕获`StopIteration`错误，返回值包含在`StopIteration`的`value`中。
+在其他activity中调用：
 
 ```
-g = fib(6)
-while True:
-     try:
-         x = next(g)
-         print('g:', x)
-     except StopIteration as e:
-         print('Generator return value:', e.value)
-         break
-```
 
-### 迭代器Iterator
-
-可以被`next()`函数调用并不断返回下一个值的对象称为迭代器。
+    MyApplication myApplication = (MyApplication) getApplication();  
+    myapplication.getInstance().addActivity(this);
 
 ```
-from collections import Iterator
-isinstance((x for x in range(10)), Iterator)
-```
+
+Android程序的真正入口是Application的onCreate\(\)方法，所以，不是所有APP都需要activity。
+
+### 生命周期 {#生命周期}
+
+* onCreate :在创建应用程序时创建。
+* onTerminate :在模拟器环境中调用，真机上不会调用。当终止应用程序对象时调用，不保证一定被调用，当程序是被内核终止以便为其他应用程序释放资源，那么将不会提醒，并且不调用应用程序的对象的onTerminate方法而直接终止进程。
+* onLowMemory :当后台程序已经终止资源还匮乏时会调用这个方法。好的应用程序一般会在这个方法里面释放一些不必要的资源来应付当后台程序已经终止，前台应用程序内存还不够时的情况。
+* onConfigurationChanged :配置改变时触发这个方法。
 
 
 
